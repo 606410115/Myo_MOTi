@@ -598,7 +598,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
                     SD_sum = SD_sum + Math.pow( imu_motion.get(i_element).getElement(i_axis) - acc_mean[i_axis - 4] , 2);
                 }
 
-                SD = SD_sum / imu_motion.size();
+                SD = Math.sqrt(SD_sum / imu_motion.size());
 
                 feature.add(SD);
             }

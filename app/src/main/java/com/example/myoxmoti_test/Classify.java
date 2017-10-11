@@ -30,8 +30,13 @@ public class Classify {
     private boolean Myo_EMG = false, Myo_IMU = false, MOTi = false;
 
     public static Classify getCurrentClassify(){
-        if(currentClassify == null){
-            currentClassify = new Classify();
+        if(currentClassify == null){//只有在第一次建立實例時才會進入同步區，之後由於實例已建立，也就不用進入同步區進行鎖定。
+            synchronized(Classify.class){
+                if(currentClassify == null){
+                    currentClassify = new Classify();
+                }
+            }
+
         }
 
         return currentClassify;
@@ -162,6 +167,10 @@ public class Classify {
             //start classify
             Thread classify = new Thread(rClassify);
             classify.start();
+
+            Myo_EMG = false;
+            Myo_IMU = false;
+            MOTi = false;
         }
     }
 

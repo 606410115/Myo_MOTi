@@ -183,7 +183,7 @@ public class MOTiLogActivity {
                     SD_sum = SD_sum + Math.pow( moti_motion.get(i_element).getElement(i_axis) - acc_mean[i_axis] , 2);
                 }
 
-                SD = SD_sum / moti_motion.size();
+                SD = Math.sqrt(SD_sum / moti_motion.size());
 
                 feature.add(SD);
             }
