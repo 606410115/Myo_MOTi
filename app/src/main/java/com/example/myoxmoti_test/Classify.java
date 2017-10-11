@@ -21,28 +21,39 @@ import weka.core.Instances;
  */
 
 public class Classify {
-    static LinkedList<Double> emg_feature = new LinkedList<>();
-    static LinkedList<Double> imu_feature = new LinkedList<>();
-    static LinkedList<Double> moti_feature = new LinkedList<>();
+    private static Classify currentClassify = null;
 
-    static boolean Myo_EMG = false, Myo_IMU = false, MOTi = false;
+    private LinkedList<Double> emg_feature = new LinkedList<>();
+    private LinkedList<Double> imu_feature = new LinkedList<>();
+    private LinkedList<Double> moti_feature = new LinkedList<>();
 
-    public static void emgList(LinkedList<Double> emgF){
+    private boolean Myo_EMG = false, Myo_IMU = false, MOTi = false;
+
+    public static Classify getCurrentClassify(){
+        if(currentClassify == null){
+            currentClassify = new Classify();
+        }
+
+        return currentClassify;
+    }
+
+
+    public void emgList(LinkedList<Double> emgF){
         emg_feature = emgF;
         Myo_EMG = true;
     }
 
-    public static void imuList(LinkedList<Double> imuF){
+    public void imuList(LinkedList<Double> imuF){
         imu_feature = imuF;
         Myo_IMU = true;
     }
 
-    public static void motiList(LinkedList<Double> motiF){
+    public void motiList(LinkedList<Double> motiF){
         moti_feature = motiF;
         MOTi = true;
     }
 
-    public static void WekaKNN(){
+    public void WekaKNN(){
         if(Myo_EMG && Myo_IMU && MOTi){//three devices have data
             LinkedList<Double> all_feature = new LinkedList<>();
 

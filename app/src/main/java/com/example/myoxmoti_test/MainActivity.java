@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     private BluetoothAdapter.LeScanCallback myLEScanCallback;
     public BluetoothAdapter mMOTiBluetoothAdapter;
 
-    public static BleBroadcastReceiver mReceiver;
+    public BleBroadcastReceiver mReceiver;
 
     ArrayList<BLEDevice> BLEDevices = new ArrayList<>();
 
@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
                 else{
                     FileWriter training = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/TrainingData/TrainingData.txt");
                     TrainingData trainingData = new TrainingData();
-                    training.write(trainingData.trainingData);
+                    training.write(trainingData.getTrainingData());
                     training.close();
                 }
             }

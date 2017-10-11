@@ -550,8 +550,8 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 feature.add(mean);
             }
 
-            Classify.emgList(feature);
-            Classify.WekaKNN();
+            Classify.getCurrentClassify().emgList(feature);
+            Classify.getCurrentClassify().WekaKNN();
         }
     };
 
@@ -603,8 +603,8 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 feature.add(SD);
             }
 
-            Classify.imuList(feature);
-            Classify.WekaKNN();
+            Classify.getCurrentClassify().imuList(feature);
+            Classify.getCurrentClassify().WekaKNN();
         }
     };
 

@@ -69,6 +69,10 @@ public class MOTiLogActivity {
                 list_moti.clear();
             }
 
+
+
+
+
             ////////////////////////////////////////////////////////////////////////////////////////
             mAccData[0]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 6, 2).getShort());
             mAccData[1]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 8, 2).getShort());
@@ -184,8 +188,8 @@ public class MOTiLogActivity {
                 feature.add(SD);
             }
 
-            Classify.motiList(feature);
-            Classify.WekaKNN();
+            Classify.getCurrentClassify().motiList(feature);
+            Classify.getCurrentClassify().WekaKNN();
         }
     };
 

@@ -5,7 +5,7 @@ package com.example.myoxmoti_test;
  */
 
 public class TrainingData {
-    public final String trainingData = "@relation ads\n" +
+    private static final String TRAININGDATA = "@relation ads\n" +
             "\n" +
             "@attribute moti_x_acc_mean numeric\n" +
             "@attribute moti_y_acc_mean numeric\n" +
@@ -36,4 +36,9 @@ public class TrainingData {
             "0,10,N\n" +
             "1,9,N\n" +
             "3,11,N";
+
+    public String getTrainingData(){
+        return TRAININGDATA;
+    }
+
 }
