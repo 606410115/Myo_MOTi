@@ -27,15 +27,15 @@ public class TrainingData {
             "@attribute emg_5_mean numeric\n" +
             "@attribute emg_6_mean numeric\n" +
             "@attribute emg_7_mean numeric\n" +
-            "@attribute profit {Y, N}\n" +
+            "@attribute profit {(1),(2)}\n" +
             "\n" +
             "@data\n" +
-            "10,2,Y\n" +
+            /*"10,2,Y\n" +
             "12,3,Y\n" +
             "9,2,Y\n" +
             "0,10,N\n" +
-            "1,9,N\n" +
-            "3,11,N";
+            "1,9,N\n" +*/
+            "-8.391137933,1.477727337,-0.654012675,3.738360247,1.940930218,3.092777971,-0.744812466,6.69358337,5.504846736,1.540377163,3.221831624,1.652696418,20.16463415,50.48780488,55,26.85365854,10.95731707,17.25609756,10.65853659,14.56097561,(1)";
 
     public String getTrainingData(){
         return TRAININGDATA;
