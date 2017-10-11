@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.ByteBuffer;
 import java.util.Date;
+import java.util.LinkedList;
 
 /**
  * Created by Mslab on 2017/7/9.
@@ -22,6 +23,8 @@ public class MOTiLogActivity {
     private double[] mGyroData=new double[3];
     private double[] mGyroPreData=new double[3];
     private int mCount=0;
+
+    private LinkedList<MOTiData> list_moti = new LinkedList<>();
 
     private TimeManager timeManager;
 
@@ -52,6 +55,19 @@ public class MOTiLogActivity {
 //            llContent.addView(tv, 0);
 
             MOTiData streamData = new MOTiData(new MOTiCharacteristicData(byteArrayExtra), timeManager);
+
+            if(MainActivity.addFlag){//收到開始收集的flag
+                list_moti.add(streamData);
+            }
+
+            if(MainActivity.endFlag){//收到停止收集的flag
+                Thread tMoti = new Thread(rMoti);
+                tMoti.start();
+            }
+
+            if(MainActivity.cleanListFlag){//收到清空list
+                list_moti.clear();
+            }
 
             ////////////////////////////////////////////////////////////////////////////////////////
             mAccData[0]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 6, 2).getShort());
@@ -128,6 +144,50 @@ public class MOTiLogActivity {
         gyro_z=gyro_z+output[2]+"\n";
         //msgtime=msgtime+time+"\n";
     }
+
+
+    private Runnable rMoti = new Runnable() {
+        @Override
+        public void run() {
+            LinkedList<MOTiData> moti_motion;
+            LinkedList<Double> feature = new LinkedList<>();
+
+            double[] acc_mean = new double[3];
+
+
+            moti_motion = list_moti;
+
+            //acc 每軸平均值(3 features) => feature[0~2]
+            for(int i_axis = 0; i_axis < 3; i_axis++){//MOTi的ACC
+                double sum = 0.00, mean;
+
+                for(int i_element = 0; i_element < moti_motion.size(); i_element++){
+                    sum = sum + moti_motion.get(i_element).getElement(i_axis);
+                }
+
+                mean = sum / moti_motion.size();
+
+                feature.add(mean);
+
+                acc_mean[i_axis] = mean;
+            }
+            //acc 每軸標準差(3 features) => feature[3~5]
+            for(int i_axis = 0; i_axis < 3; i_axis++){
+                double SD_sum = 0.00, SD;
+
+                for(int i_element = 0; i_element < moti_motion.size(); i_element++){
+                    SD_sum = SD_sum + Math.pow( moti_motion.get(i_element).getElement(i_axis) - acc_mean[i_axis] , 2);
+                }
+
+                SD = SD_sum / moti_motion.size();
+
+                feature.add(SD);
+            }
+
+            Classify.motiList(feature);
+            Classify.WekaKNN();
+        }
+    };
 
 //    void showCount(){
 //        String count = "";

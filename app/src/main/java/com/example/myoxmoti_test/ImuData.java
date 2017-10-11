@@ -27,6 +27,14 @@ public class ImuData {
         imuData.add(element);
     }
 
+    public Double getElement(int index) {
+        if (index < 0 || index > imuData.size() - 1) {
+            return null;
+        } else {
+            return imuData.get(index);
+        }
+    }
+
     public ArrayList<Double> getImuArray() {
         return this.imuData;
     }

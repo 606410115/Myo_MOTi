@@ -108,6 +108,10 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
 
     TimeManager timeManager;
 
+    public static boolean addFlag = false;
+    public static boolean endFlag = false;
+    public static boolean cleanListFlag = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -186,6 +190,44 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
                 }, SCAN_PERIOD);
                 mMyoBluetoothAdapter.startLeScan(this);
             }
+        }
+
+        try {
+
+            File mSDFile = null;
+
+            //檢查有沒有SD卡裝置
+            if (Environment.getExternalStorageState().equals(Environment.MEDIA_REMOVED)) {
+                //Toast.makeText(MainActivity.this, "沒有SD卡!!!", Toast.LENGTH_SHORT).show();
+                return;
+            } else {
+                //取得SD卡儲存路徑
+                //mSDFile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+                mSDFile = Environment.getExternalStorageDirectory();
+            }
+
+            //建立文件檔儲存路徑
+            File mFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/TrainingData");
+            //File mFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/MyAndroid");
+
+            //若沒有檔案儲存路徑時則建立此檔案路徑
+            if (!mFile.exists()) {
+                if(!mFile.mkdirs()){//無法建立檔案
+                    throw new Error("mkdirs error");
+                }
+                else{
+                    FileWriter training = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/TrainingData/TrainingData.txt");
+                    TrainingData trainingData = new TrainingData();
+                    training.write(trainingData.trainingData);
+                    training.close();
+                }
+            }
+
+
+
+            //Log.d("saveSuccess","已儲存文字");
+        } catch (Exception e) {
+            Log.e("save data error", e.getLocalizedMessage());
         }
     }
 
@@ -706,7 +748,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
             if (!mFile.exists()) {
                 mFile.mkdirs();
             }
-            FileWriter Acc_x = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/Acc_x.txt");
+            /*FileWriter Acc_x = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/Acc_x.txt");
             Acc_x.write(mReceiver.mLogActivity.acc_x);
             Acc_x.close();
             FileWriter Acc_y = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/Acc_y.txt");
@@ -724,13 +766,13 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
             Gyro_y.close();
             FileWriter Gyro_z = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/Gyro_z.txt");
             Gyro_z.write(mReceiver.mLogActivity.gyro_z);
-            Gyro_z.close();
+            Gyro_z.close();*/
             /*FileWriter t = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MyMotiWrite/time.txt");
             t.write(msgtime);
             t.close();*/
-            FileWriter mFileWriterEMG = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/EMG_data.txt");
+            /*FileWriter mFileWriterEMG = new FileWriter(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/EMG_data.txt");
             mFileWriterEMG.write(mMyoCallback.EMG_data);
-            mFileWriterEMG.close();
+            mFileWriterEMG.close();*/
 
             Log.d("saveSuccess","已儲存文字");
         } catch (Exception e) {

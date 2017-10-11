@@ -38,6 +38,11 @@ public class MyoGattCallback extends BluetoothGattCallback {
     /** android Characteristic ID (from Android Samples/BluetoothLeGatt/SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG) */
     private static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
+    private final static int EMG_WINDOW_LENGTH = 5;
+    private final static int EMG_MIN_LENGTH = 0;
+    private final static int EMG_START_THRESHOLD = 0;
+    private final static int EMG_END_THRESHOLD = 0;
+
     private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
     private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<BluetoothGattCharacteristic>();
 
@@ -59,6 +64,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
     byte[] emg_data;
     public String EMG_data="";
 
+    private int emgStreamCount = 0;
+    private EmgData emgStreamingMaxData;// emg取stream取0.2秒內最大
+
     private int nowGraphIndex = 0;
     private Button nowButton;
 
@@ -72,6 +80,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
     private LinkedList<EmgData> list_emg = new LinkedList<>();
     private LinkedList<ImuData> list_imu = new LinkedList<>();
+
+    private LinkedList<EmgData> list_emgWindow = new LinkedList<>();
+    //private LinkedList<ImuData> list_imuWindow = new LinkedList<>();
 
     private TimeManager timeManager;
 
@@ -287,7 +298,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
     }
 
     long last_send_never_sleep_time_ms = System.currentTimeMillis();
-    long pretime=0;
+    //long pretime=0;
     final static long NEVER_SLEEP_SEND_TIME = 10000;  // Milli Second
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
@@ -295,14 +306,80 @@ public class MyoGattCallback extends BluetoothGattCallback {
             long systemTime_ms = System.currentTimeMillis();
             /*byte[] */emg_data = characteristic.getValue();
             /////GestureDetectModelManager.getCurrentModel().event(systemTime_ms,emg_data);//GestureSaveModel use it!!
-            Log.d("timeee","pre: "+pretime+" now: "+systemTime_ms);
-            pretime=systemTime_ms;
+            /*Log.d("timeee","pre: "+pretime+" now: "+systemTime_ms);
+            pretime=systemTime_ms;*/
 
 
             EmgData streamData = new EmgData(new EmgCharacteristicData(emg_data), timeManager);//get current emgDataRows and then 16->8 in other class
 
-            list_emg.add(streamData);
+            if(emgStreamCount >= EMG_WINDOW_LENGTH){
+                list_emgWindow.removeFirst();
+            }
+            else{
+                emgStreamCount++;
+            }
 
+            list_emgWindow.add(streamData);
+
+            if (emgStreamCount == 1){
+                emgStreamingMaxData = streamData;
+            } else {
+                for (int i_element = 0; i_element < 8; i_element++) {
+                    if (streamData.getElement(i_element) > emgStreamingMaxData.getElement(i_element)) {
+                        emgStreamingMaxData.setElement(i_element, streamData.getElement(i_element));
+                    }
+                }
+                if (emgStreamCount == EMG_WINDOW_LENGTH){//5
+                    double sum = 0.00, mean;
+
+                    for (int i = 0; i < 8; i++) {
+                        sum = sum + emgStreamingMaxData.getElement(i);
+                    }
+                    mean = sum / 8;
+
+                    if(mean > EMG_START_THRESHOLD){//有意義的動作
+                        if(!MainActivity.addFlag){//避免正在用力中還在多存
+                            MainActivity.addFlag = true;
+
+                            for(int i = 0; i < EMG_WINDOW_LENGTH; i++){//把window裡的data存起來
+                                list_emg.add(list_emgWindow.get(i));
+                            }
+                        }
+
+                    }
+                    else if (mean < EMG_END_THRESHOLD && MainActivity.addFlag){//正在存且低於結束門檻
+
+                        if(list_emg.size() < EMG_MIN_LENGTH){//太短
+                            MainActivity.cleanListFlag = true;
+                            list_emg.clear();
+                        }
+                        else{//蒐集完成
+                            Thread tEmg = new Thread(rEmg);
+                            tEmg.start();
+                        }
+
+                        MainActivity.addFlag = false;
+                        MainActivity.cleanListFlag = true;
+                    }
+
+                    if(MainActivity.addFlag){
+                        list_emg.add(streamData);
+                    }
+
+                    /*if(MainActivity.cleanListFlag){
+                        list_emg.clear();
+                    }*/
+
+                    /*if(MainActivity.endFlag){
+                        Thread tEmg = new Thread(rEmg);
+                        tEmg.start();
+                    }*/
+
+                    //streamCount = 0;
+                }
+            }
+
+///////////////////////////////////////////////////////////////////////////////////////////
             for (int i = 0; i < 8; i++) {
                 EMG_data=EMG_data+streamData.getElement(i)+"    ";
             }
@@ -310,7 +387,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
             Log.d("myEMGmsg",EMG_data);
 
 
-            ///////////////////////////////////////////////////////////////////////////////////////////
+
             ByteReader emg_br = new ByteReader();
             emg_br.setByteData(emg_data);//for nopModel use SaveModel has the same one
 
@@ -321,6 +398,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
                     emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),
                     emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte());
             Log.d("MYOEMG",callback_msg);
+
             emg_br = new ByteReader();
             emg_br.setByteData(emg_data);
             for(int emgInputIndex = 0;emgInputIndex<16;emgInputIndex++) {
@@ -342,8 +420,63 @@ public class MyoGattCallback extends BluetoothGattCallback {
             //Log.d("Mode","IMU : "+imu_data);
             ImuData streamData = new ImuData(new ImuCharacteristicData(imu_data), timeManager);
 
-            list_imu.add(streamData);
-            //list_imu.get(id).getImuArray().get(0~9);
+            if(MainActivity.addFlag){//收到開始收集的flag
+                list_imu.add(streamData);
+            }
+
+            if(MainActivity.endFlag){//收到停止收集的flag
+                Thread tImu = new Thread(rImu);
+                tImu.start();
+            }
+
+            if(MainActivity.cleanListFlag){//收到清空list
+                list_imu.clear();
+            }
+
+            /*if(imuStreamCount >= IMU_WINDOW_LENGTH){
+                list_imuWindow.removeFirst();
+            }
+            else{
+                imuStreamCount++;
+            }
+
+            list_imuWindow.add(streamData);
+
+            if (imuStreamCount == 1){//window
+                imuStreamingMaxData = streamData;
+            } else {
+                if (imuStreamCount == IMU_WINDOW_LENGTH){
+
+                    //要做什麼事
+
+                    if(mean > IMU_START_THRESHOLD){
+                        MainActivity.addFlag = true;
+
+                        for(int i = 0; i < IMU_WINDOW_LENGTH; i++){//把window裡的data存起來
+                            list_imu.add(list_imuWindow.get(i));
+                        }
+                    }
+                    else if (mean < IMU_END_THRESHOLD && MainActivity.addFlag){//正在存且低於結束門檻
+
+                        if(list_imu.size() < IMU_MIN_LENGTH){//太短
+                            list_imu.clear();
+                        }
+                        else{//蒐集完成
+                            Thread tEmg = new Thread(rEmg);
+                            tEmg.start();
+                        }
+
+                        MainActivity.addFlag = false;
+                    }
+
+                    if(MainActivity.addFlag){
+                        list_imu.add(streamData);
+                    }
+
+                    //streamCount = 0;
+                }
+            }*/
+
             ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ByteReader imu_br = new ByteReader();
             imu_br.setByteData(imu_data);//for nopModel use SaveModel has the same one
@@ -355,9 +488,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
                     (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,
                     imu_br.getShort()/MYOHW_GYROSCOPE_SCALE,imu_br.getShort()/MYOHW_GYROSCOPE_SCALE,imu_br.getShort()/MYOHW_GYROSCOPE_SCALE);
             Log.d("MYOIMU",callback_imu);*/
-            float w=imu_br.getShort()/MYOHW_ORIENTATION_SCALE, x=imu_br.getShort()/MYOHW_ORIENTATION_SCALE, y=imu_br.getShort()/MYOHW_ORIENTATION_SCALE, z=imu_br.getShort()/MYOHW_ORIENTATION_SCALE;
-            float accX=(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accY=(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accZ=(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G;
-            float gryoX=imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoY=imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoZ=imu_br.getShort()/MYOHW_GYROSCOPE_SCALE;
+            float w = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, x = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, y = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, z = imu_br.getShort()/MYOHW_ORIENTATION_SCALE;
+            float accX = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accY = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accZ = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G;
+            float gryoX = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoY = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoZ = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE;
 
             String q="w:"+w+"x:"+x+" y:"+y+" z:"+z;
             String acc="x:"+accX+" y:"+accY+" z:"+accZ;
@@ -395,6 +528,85 @@ public class MyoGattCallback extends BluetoothGattCallback {
         }
         return false;
     }
+
+    private Runnable rEmg = new Runnable() {
+        @Override
+        public void run() {
+            LinkedList<EmgData> emg_motion;
+            LinkedList<Double> feature = new LinkedList<>();
+
+            emg_motion = list_emg;
+
+            //emg 每個sensor的平均值特徵(8 features)
+            for(int j_sensor = 0; j_sensor < 8; j_sensor++){//MYO EMG的哪個sensor
+                double sum =0.00, mean;
+
+                for(int i_element = 0; i_element < emg_motion.size(); i_element++){//蒐集的數量
+                    sum = sum + emg_motion.get(i_element).getElement(j_sensor);
+                }
+
+                mean = sum / emg_motion.size();
+
+                feature.add(mean);
+            }
+
+            Classify.emgList(feature);
+            Classify.WekaKNN();
+        }
+    };
+
+    private Runnable rImu = new Runnable() {
+        @Override
+        public void run() {
+            LinkedList<ImuData> imu_motion;
+            LinkedList<Double> feature = new LinkedList<>();
+
+            double[] acc_mean = new double[3];
+
+
+            imu_motion = list_imu;
+
+            //acc 每軸平均值(3 features) => feature[0~2]
+            for(int i_axis = 4; i_axis < 7; i_axis++){//IMU的ACC
+                double sum = 0.00, mean;
+
+                for(int i_element = 0; i_element < imu_motion.size(); i_element++){
+                    sum = sum + imu_motion.get(i_element).getElement(i_axis);
+                }
+
+                mean = sum / imu_motion.size();
+
+                feature.add(mean);
+
+                switch (i_axis){
+                    case 4:
+                        acc_mean[0] = mean;//x mean
+                        break;
+                    case 5:
+                        acc_mean[1] = mean;//y mean
+                        break;
+                    case 6:
+                        acc_mean[2] = mean;//z mean
+                        break;
+                }
+            }
+            //acc 每軸標準差(3 features) => feature[3~5]
+            for(int i_axis = 4; i_axis < 7; i_axis++){
+                double SD_sum = 0.00, SD;
+
+                for(int i_element = 0; i_element < imu_motion.size(); i_element++){
+                    SD_sum = SD_sum + Math.pow( imu_motion.get(i_element).getElement(i_axis) - acc_mean[i_axis - 4] , 2);
+                }
+
+                SD = SD_sum / imu_motion.size();
+
+                feature.add(SD);
+            }
+
+            Classify.imuList(feature);
+            Classify.WekaKNN();
+        }
+    };
 
     public void stopCallback() {
         // Before the closing GATT, set Myo [Normal Sleep Mode].

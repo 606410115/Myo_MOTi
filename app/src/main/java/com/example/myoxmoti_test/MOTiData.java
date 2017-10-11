@@ -26,6 +26,14 @@ public class MOTiData{
         MOTiData.add(element);
     }
 
+    public Double getElement(int index) {
+        if (index < 0 || index > MOTiData.size() - 1) {
+            return null;
+        } else {
+            return MOTiData.get(index);
+        }
+    }
+
     public ArrayList<Double> getMOTiArray() {
         return this.MOTiData;
     }
