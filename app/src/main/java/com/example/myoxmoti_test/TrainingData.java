@@ -17,8 +17,8 @@ public class TrainingData {
             "@attribute imu_y_acc_mean numeric\n" +
             "@attribute imu_z_acc_mean numeric\n" +
             "@attribute imu_x_acc_SD numeric\n" +
-            "@attribute imu_x_acc_SD numeric\n" +
-            "@attribute imu_x_acc_SD numeric\n" +
+            "@attribute imu_y_acc_SD numeric\n" +
+            "@attribute imu_z_acc_SD numeric\n" +
             "@attribute emg_0_mean numeric\n" +
             "@attribute emg_1_mean numeric\n" +
             "@attribute emg_2_mean numeric\n" +

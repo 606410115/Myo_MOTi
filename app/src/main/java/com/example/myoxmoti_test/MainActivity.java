@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     private BluetoothAdapter.LeScanCallback myLEScanCallback;
     public BluetoothAdapter mMOTiBluetoothAdapter;
 
-    public BleBroadcastReceiver mReceiver;
+    public static BleBroadcastReceiver mReceiver;
 
     ArrayList<BLEDevice> BLEDevices = new ArrayList<>();
 
@@ -111,6 +111,14 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     public static boolean addFlag = false;
     public static boolean endFlag = false;
     public static boolean cleanListFlag = false;
+
+    public static boolean myoEmgPreventEndAgain = false;
+    public static boolean myoImuPreventEndAgain = false;
+    public static boolean motiPreventEndAgain = false;
+
+    public static boolean myoEmgHaveCleaned= false;
+    public static boolean myoImuHaveCleaned = false;
+    public static boolean motiHaveCleaned = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

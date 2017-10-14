@@ -20,7 +20,7 @@ public class ImuData {
 
     public ImuData(ImuCharacteristicData characteristicData, TimeManager timeManager) {
         this.imuData = new ArrayList<>(characteristicData.covertRawData().getImuArray() );
-        time = timeManager.getTime();
+        //time = timeManager.getTime();
     }
 
     public void addElement(double element) {

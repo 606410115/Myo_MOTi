@@ -45,21 +45,26 @@ public class Classify {
 
     public void emgList(LinkedList<Double> emgF){
         emg_feature = emgF;
+        Log.d("Classify", "emg Ready");
         Myo_EMG = true;
     }
 
     public void imuList(LinkedList<Double> imuF){
         imu_feature = imuF;
+        Log.d("Classify", "imu Ready");
         Myo_IMU = true;
     }
 
     public void motiList(LinkedList<Double> motiF){
         moti_feature = motiF;
+        Log.d("Classify", "moti Ready");
         MOTi = true;
     }
 
     public void WekaKNN(){
         if(Myo_EMG && Myo_IMU && MOTi){//three devices have data
+            MainActivity.endFlag = false;
+            Log.d("Classify", "start KNN");
             LinkedList<Double> all_feature = new LinkedList<>();
 
             for(int i = 0; i < moti_feature.size(); i++){
@@ -122,7 +127,7 @@ public class Classify {
                     "@attribute emg_5_mean numeric\n" +
                     "@attribute emg_6_mean numeric\n" +
                     "@attribute emg_7_mean numeric\n" +
-                    "@attribute profit {Y, N}\n" +
+                    "@attribute profit {(1), (2)}\n" +
                     "\n" +
                     "@data\n";
             for (int i_feature = 0; i_feature < all_feature.size(); i_feature++){
@@ -171,10 +176,17 @@ public class Classify {
             Myo_EMG = false;
             Myo_IMU = false;
             MOTi = false;
+
+            // start to clean the list
+            MainActivity.cleanListFlag = true;
+
+            MainActivity.myoEmgPreventEndAgain = false;
+            MainActivity.myoImuPreventEndAgain = false;
+            MainActivity.motiPreventEndAgain = false;
         }
     }
 
-    public static BufferedReader readDataFile(String filename) {
+    /*public static BufferedReader readDataFile(String filename) {
         BufferedReader inputReader = null;
 
         try {
@@ -184,7 +196,7 @@ public class Classify {
         }
 
         return inputReader;
-    }
+    }*/
 
     private static Runnable rClassify = new Runnable() {
         @Override
@@ -206,7 +218,7 @@ public class Classify {
                 //建立文件檔儲存路徑
                 File mTrainingFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/TrainingData/TrainingData.txt");
 
-                BufferedReader trainingData = readDataFile(mTrainingFile.toString());
+                BufferedReader trainingData = new BufferedReader(new FileReader(mTrainingFile));
 
                 Instances training = new Instances(trainingData);
                 training.setClassIndex(training.numAttributes() - 1);
@@ -214,7 +226,7 @@ public class Classify {
 
                 File mTestFile = new File(mSDFile.getParent() + "/" + mSDFile.getName() + "/MYOxMOTi/TestData/TestData.txt");
 
-                BufferedReader testData = readDataFile(mTestFile.toString());
+                BufferedReader testData = new BufferedReader(new FileReader(mTestFile));
                 Instances test = new Instances(testData);
                 test.setClassIndex(test.numAttributes() - 1);
 
@@ -230,8 +242,7 @@ public class Classify {
 
                 String result = mGesture[test.numAttributes()-1];
 
-            } catch (IOException e) {
-                e.printStackTrace();
+                Log.d("RESUlt", result);
             } catch (Exception e) {
                 e.printStackTrace();
             }

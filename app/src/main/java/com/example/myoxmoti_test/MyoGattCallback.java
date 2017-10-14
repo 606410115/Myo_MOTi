@@ -39,9 +39,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private static final String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
     private final static int EMG_WINDOW_LENGTH = 5;
-    private final static int EMG_MIN_LENGTH = 0;
-    private final static int EMG_START_THRESHOLD = 0;
-    private final static int EMG_END_THRESHOLD = 0;
+    private final static int EMG_MIN_LENGTH = 30;
+    private final static int EMG_START_THRESHOLD = 12;
+    private final static int EMG_END_THRESHOLD = 10;
 
     private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
     private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<BluetoothGattCharacteristic>();
@@ -321,70 +321,85 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
             list_emgWindow.add(streamData);
 
-            if (emgStreamCount == 1){
-                emgStreamingMaxData = streamData;
-            } else {
-                for (int i_element = 0; i_element < 8; i_element++) {
-                    if (streamData.getElement(i_element) > emgStreamingMaxData.getElement(i_element)) {
-                        emgStreamingMaxData.setElement(i_element, streamData.getElement(i_element));
+            if (emgStreamCount == EMG_WINDOW_LENGTH){//5
+                emgStreamingMaxData = list_emgWindow.getFirst();
+
+                for(int i_window = 0; i_window < list_emgWindow.size(); i_window++){//window內的全部data
+                    for (int i_element = 0; i_element < 8; i_element++) {
+                        if (list_emgWindow.get(i_window).getElement(i_element) > emgStreamingMaxData.getElement(i_element)) {
+                            emgStreamingMaxData.setElement(i_element, streamData.getElement(i_element));
+                        }
                     }
                 }
-                if (emgStreamCount == EMG_WINDOW_LENGTH){//5
-                    double sum = 0.00, mean;
 
-                    for (int i = 0; i < 8; i++) {
-                        sum = sum + emgStreamingMaxData.getElement(i);
+                double sum = 0.00, mean;
+
+                for (int i = 0; i < 8; i++) {
+                    sum = sum + emgStreamingMaxData.getElement(i);
+                }
+                mean = sum / 8;
+
+                if(mean > EMG_START_THRESHOLD){//有意義的動作
+                    Log.d("MyoEMG", "cross start threshold" + " mean: " + mean + " Flag: " + MainActivity.addFlag);
+                    if(!MainActivity.addFlag){//避免正在用力中還在多存
+                        Log.d("MyoEMG", "start save data");
+                        MainActivity.addFlag = true;
+
+                        for(int i = 0; i < EMG_WINDOW_LENGTH-1; i++){//把window裡的data存起來 最後一個留給下面add
+                            list_emg.add(list_emgWindow.get(i));
+                        }
                     }
-                    mean = sum / 8;
 
-                    if(mean > EMG_START_THRESHOLD){//有意義的動作
-                        if(!MainActivity.addFlag){//避免正在用力中還在多存
-                            MainActivity.addFlag = true;
-
-                            for(int i = 0; i < EMG_WINDOW_LENGTH; i++){//把window裡的data存起來
-                                list_emg.add(list_emgWindow.get(i));
-                            }
-                        }
-
-                    }
-                    else if (mean < EMG_END_THRESHOLD && MainActivity.addFlag){//正在存且低於結束門檻
-
-                        if(list_emg.size() < EMG_MIN_LENGTH){//太短
-                            MainActivity.cleanListFlag = true;
-                            list_emg.clear();
-                        }
-                        else{//蒐集完成
-                            Thread tEmg = new Thread(rEmg);
-                            tEmg.start();
-                        }
-
-                        MainActivity.addFlag = false;
+                }
+                else if (mean < EMG_END_THRESHOLD && MainActivity.addFlag){//正在存且低於結束門檻
+                    Log.d("MyoEMG", "lower than end threshold");
+                    if(list_emg.size() < EMG_MIN_LENGTH){//太短
+                        Log.d("MyoEMG", "data too short");
                         MainActivity.cleanListFlag = true;
                     }
-
-                    if(MainActivity.addFlag){
-                        list_emg.add(streamData);
+                    else{//蒐集完成
+                        MainActivity.endFlag = true;
                     }
 
-                    /*if(MainActivity.cleanListFlag){
-                        list_emg.clear();
-                    }*/
+                    MainActivity.addFlag = false;
 
-                    /*if(MainActivity.endFlag){
+                }
+
+                if(MainActivity.addFlag){
+                    list_emg.add(streamData);
+                }
+
+                if(MainActivity.endFlag){
+                    if(!MainActivity.myoEmgPreventEndAgain){//防止連續進去
+                        MainActivity.myoEmgPreventEndAgain = true;
                         Thread tEmg = new Thread(rEmg);
                         tEmg.start();
-                    }*/
+                    }
+                }
 
-                    //streamCount = 0;
+                if(MainActivity.cleanListFlag){
+                    if(!MainActivity.myoEmgHaveCleaned){//當cleanFlag出現時，在大家還沒clean的時候，防止再度clean
+                        MainActivity.myoEmgHaveCleaned = true;//已清除過
+                        list_emg.clear();
+                    }
+
+                    if(MainActivity.myoEmgHaveCleaned && MainActivity.myoImuHaveCleaned && MainActivity.motiHaveCleaned){//當大家在清空狀態時，都已清空，將Flag轉為不需要清空
+                        MainActivity.cleanListFlag = false;
+
+                        MainActivity.myoEmgHaveCleaned= false;
+                        MainActivity.myoImuHaveCleaned = false;
+                        MainActivity.motiHaveCleaned = false;
+                    }
                 }
             }
 
-///////////////////////////////////////////////////////////////////////////////////////////
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             for (int i = 0; i < 8; i++) {
                 EMG_data=EMG_data+streamData.getElement(i)+"    ";
             }
             EMG_data=EMG_data+"\n";
-            Log.d("myEMGmsg",EMG_data);
+            //Log.d("myEMGmsg",EMG_data);
 
 
 
@@ -414,7 +429,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
         }
 
 
-        /////////////////////////////IMU///////////////////////////////
+        /********************************************************************************************************************/
         if (IMU_DATA_ID.equals(characteristic.getUuid().toString())){
             byte[] imu_data = characteristic.getValue();
             //Log.d("Mode","IMU : "+imu_data);
@@ -425,12 +440,27 @@ public class MyoGattCallback extends BluetoothGattCallback {
             }
 
             if(MainActivity.endFlag){//收到停止收集的flag
-                Thread tImu = new Thread(rImu);
-                tImu.start();
+                if(!MainActivity.myoImuPreventEndAgain){//防止連續進去
+                    MainActivity.myoImuPreventEndAgain = true;//已收集完
+                    Thread tImu = new Thread(rImu);
+                    tImu.start();
+                }
+
             }
 
             if(MainActivity.cleanListFlag){//收到清空list
-                list_imu.clear();
+                if(!MainActivity.myoImuHaveCleaned){//當cleanFlag出現時，在大家還沒clean的時候，防止再度clean
+                    MainActivity.myoImuHaveCleaned = true;//已清除過
+                    list_imu.clear();
+                }
+
+                if(MainActivity.myoEmgHaveCleaned && MainActivity.myoImuHaveCleaned && MainActivity.motiHaveCleaned){//當大家在清空狀態時，都已清空，將Flag轉為不需要清空
+                    MainActivity.cleanListFlag = false;
+
+                    MainActivity.myoEmgHaveCleaned= false;
+                    MainActivity.myoImuHaveCleaned = false;
+                    MainActivity.motiHaveCleaned = false;
+                }
             }
 
             /*if(imuStreamCount >= IMU_WINDOW_LENGTH){
@@ -532,6 +562,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private Runnable rEmg = new Runnable() {
         @Override
         public void run() {
+            Log.d("MyoEMG", "emg thread");
             LinkedList<EmgData> emg_motion;
             LinkedList<Double> feature = new LinkedList<>();
 
@@ -558,6 +589,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private Runnable rImu = new Runnable() {
         @Override
         public void run() {
+            Log.d("MyoIMU", "imu thread");
             LinkedList<ImuData> imu_motion;
             LinkedList<Double> feature = new LinkedList<>();
 

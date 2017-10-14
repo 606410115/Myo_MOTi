@@ -1,5 +1,7 @@
 package com.example.myoxmoti_test;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 /**
@@ -19,7 +21,7 @@ public class MOTiData{
 
     public MOTiData(MOTiCharacteristicData characteristicData, TimeManager timeManager) {
         this.MOTiData = new ArrayList<>(characteristicData.covertRawData().getMOTiArray() );
-        time = timeManager.getTime();
+        //time = timeManager.getTime();
     }
 
     public void addElement(double element) {
@@ -49,5 +51,7 @@ public class MOTiData{
         gryoX=MOTiData.get(3);
         gryoY=MOTiData.get(4);
         gryoZ=MOTiData.get(5);
+
+        Log.d("LogImu","accX: " + accX + "accY: " + accY + "accZ: " + accZ + "gryoX: " + gryoX + "gryoY: " + gryoY + "gryoZ: " + gryoZ);
     }
 }

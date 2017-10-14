@@ -18,7 +18,7 @@ public class EmgData {
 
     public EmgData(EmgCharacteristicData characteristicData, TimeManager timeManager) {
         this.emgData = new ArrayList<>( characteristicData.getEmg8Data_abs().getEmgArray() );//get 16->8(EmgData) and then getEmgArray() let emgData=emg8data
-        time = timeManager.getTime();
+        //time = timeManager.getTime();
     }
 
     public EmgData(ArrayList<Double> emgData) {

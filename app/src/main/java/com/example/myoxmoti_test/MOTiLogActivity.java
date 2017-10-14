@@ -58,15 +58,33 @@ public class MOTiLogActivity {
 
             if(MainActivity.addFlag){//收到開始收集的flag
                 list_moti.add(streamData);
+
+                Log.d("MOTi", "list_moti accX: " + list_moti.getLast().getElement(0) + " accY: " + list_moti.getLast().getElement(1) + " accZ: " + list_moti.getLast().getElement(2));
             }
 
             if(MainActivity.endFlag){//收到停止收集的flag
-                Thread tMoti = new Thread(rMoti);
-                tMoti.start();
+                if(!MainActivity.motiPreventEndAgain){//防止連續進去
+                    MainActivity.motiPreventEndAgain = true;
+                    Log.d("MOTi", "list_moti size: " + list_moti.size());
+                    Thread tMoti = new Thread(rMoti);
+                    tMoti.start();
+                }
+
             }
 
-            if(MainActivity.cleanListFlag){//收到清空list
-                list_moti.clear();
+            if(MainActivity.cleanListFlag){//收到清空list(clean階段)
+                if(!MainActivity.motiHaveCleaned){//當cleanFlag出現時，在大家還沒clean的時候，防止再度clean
+                    MainActivity.motiHaveCleaned = true;//已清除過
+                    list_moti.clear();
+                }
+
+                if(MainActivity.myoEmgHaveCleaned && MainActivity.myoImuHaveCleaned && MainActivity.motiHaveCleaned){//當大家在清空狀態時，都已清空，將Flag轉為不需要清空
+                    MainActivity.cleanListFlag = false;
+
+                    MainActivity.myoEmgHaveCleaned= false;
+                    MainActivity.myoImuHaveCleaned = false;
+                    MainActivity.motiHaveCleaned = false;
+                }
             }
 
 
@@ -74,7 +92,7 @@ public class MOTiLogActivity {
 
 
             ////////////////////////////////////////////////////////////////////////////////////////
-            mAccData[0]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 6, 2).getShort());
+            /*mAccData[0]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 6, 2).getShort());
             mAccData[1]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 8, 2).getShort());
             mAccData[2]=RawDataToAccelerometer(ByteBuffer.wrap(byteArrayExtra, 10, 2).getShort());
 
@@ -103,7 +121,7 @@ public class MOTiLogActivity {
             mGyroPreData[1]=RawDataToGyroscope(ByteBuffer.wrap(byteArrayExtra, 14, 2).getShort());
             mGyroPreData[2]=RawDataToGyroscope(ByteBuffer.wrap(byteArrayExtra, 16, 2).getShort());
 
-            mCount++;
+            mCount++;*/
         }
 
 //        if(!devices.contains(name)){
@@ -153,6 +171,7 @@ public class MOTiLogActivity {
     private Runnable rMoti = new Runnable() {
         @Override
         public void run() {
+            Log.d("MOTi", "moti thread");
             LinkedList<MOTiData> moti_motion;
             LinkedList<Double> feature = new LinkedList<>();
 
@@ -160,7 +179,6 @@ public class MOTiLogActivity {
 
 
             moti_motion = list_moti;
-
             //acc 每軸平均值(3 features) => feature[0~2]
             for(int i_axis = 0; i_axis < 3; i_axis++){//MOTi的ACC
                 double sum = 0.00, mean;
@@ -170,7 +188,7 @@ public class MOTiLogActivity {
                 }
 
                 mean = sum / moti_motion.size();
-
+                Log.d("MOTi", "mean: " + mean);
                 feature.add(mean);
 
                 acc_mean[i_axis] = mean;
@@ -184,7 +202,7 @@ public class MOTiLogActivity {
                 }
 
                 SD = Math.sqrt(SD_sum / moti_motion.size());
-
+                Log.d("MOTi", "SD: " + SD);
                 feature.add(SD);
             }
 
