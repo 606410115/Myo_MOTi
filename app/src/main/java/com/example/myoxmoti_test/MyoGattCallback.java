@@ -1,5 +1,6 @@
 package com.example.myoxmoti_test;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -86,9 +87,12 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
     private TimeManager timeManager;
 
-    public MyoGattCallback(TextView view, TimeManager tM){
+    private Activity activity;
+
+    public MyoGattCallback(TextView view, TimeManager tM, Activity mainActivity){
         dataView = view;
         timeManager = tM;
+        activity = mainActivity;
     }
 
 
@@ -580,7 +584,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
                 feature.add(mean);
             }
-
+            Classify.getCurrentClassify().setTextView(dataView, activity);
             Classify.getCurrentClassify().emgList(feature);
             Classify.getCurrentClassify().WekaKNN();
         }

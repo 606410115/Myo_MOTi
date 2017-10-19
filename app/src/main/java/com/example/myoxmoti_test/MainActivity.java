@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
         if (deviceName.equals(device.getName())) {
             mMyoBluetoothAdapter.stopLeScan(this);
             // Trying to connect GATT
-            mMyoCallback = new MyoGattCallback(mTextView, timeManager);
+            mMyoCallback = new MyoGattCallback(mTextView, timeManager, this);
             mBluetoothGatt = device.connectGatt(this, false, mMyoCallback);
             mMyoCallback.setBluetoothGatt(mBluetoothGatt);
         }

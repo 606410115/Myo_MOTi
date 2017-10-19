@@ -1,7 +1,9 @@
 package com.example.myoxmoti_test;
 
+import android.app.Activity;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,6 +31,12 @@ public class Classify {
 
     private boolean Myo_EMG = false, Myo_IMU = false, MOTi = false;
 
+    private TextView textView;
+
+    private Activity activity;
+
+    private String result;
+
     public static Classify getCurrentClassify(){
         if(currentClassify == null){//只有在第一次建立實例時才會進入同步區，之後由於實例已建立，也就不用進入同步區進行鎖定。
             synchronized(Classify.class){
@@ -40,6 +48,11 @@ public class Classify {
         }
 
         return currentClassify;
+    }
+
+    public void setTextView(TextView txv, Activity mainActivity){
+        textView = txv;
+        activity = mainActivity;
     }
 
 
@@ -127,7 +140,7 @@ public class Classify {
                     "@attribute emg_5_mean numeric\n" +
                     "@attribute emg_6_mean numeric\n" +
                     "@attribute emg_7_mean numeric\n" +
-                    "@attribute profit {(1), (2)}\n" +
+                    "@attribute profit {(1), (2), (7), (8), (11), (12)}\n" +
                     "\n" +
                     "@data\n";
             for (int i_feature = 0; i_feature < all_feature.size(); i_feature++){
@@ -198,7 +211,7 @@ public class Classify {
         return inputReader;
     }*/
 
-    private static Runnable rClassify = new Runnable() {
+    private Runnable rClassify = new Runnable() {
         @Override
         public void run() {
 
@@ -240,8 +253,15 @@ public class Classify {
                 Instance mTest = test.instance(0);
                 String[] mGesture = mTest.toString().split(",");
 
-                String result = mGesture[test.numAttributes()-1];
+                result = mGesture[test.numAttributes()-1];
 
+                activity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        textView.setText(result);
+                    }
+                });
+
+                //textView.setText(result);
                 Log.d("RESUlt", result);
             } catch (Exception e) {
                 e.printStackTrace();
