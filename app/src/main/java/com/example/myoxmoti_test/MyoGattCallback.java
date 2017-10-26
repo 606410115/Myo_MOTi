@@ -41,8 +41,8 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
     private final static int EMG_WINDOW_LENGTH = 5;
     private final static int EMG_MIN_LENGTH = 30;
-    private final static int EMG_START_THRESHOLD = 12;
-    private final static int EMG_END_THRESHOLD = 10;
+    private final static int EMG_START_THRESHOLD = 8;
+    private final static int EMG_END_THRESHOLD = 6;
 
     private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
     private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<BluetoothGattCharacteristic>();
@@ -68,12 +68,6 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private int emgStreamCount = 0;
     private EmgData emgStreamingMaxData;// emg取stream取0.2秒內最大
 
-    private int nowGraphIndex = 0;
-    private Button nowButton;
-
-    int[][] dataList1_a = new int[8][50];
-    int[][] dataList1_b = new int[8][50];
-
     private static final float MYOHW_ORIENTATION_SCALE = 16384.0f;
     private static final float MYOHW_ACCELEROMETER_SCALE = 2048.0f;
     private static final float MYOHW_GYROSCOPE_SCALE = 16.0f;
@@ -87,12 +81,12 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
     private TimeManager timeManager;
 
-    private Activity activity;
-
     public MyoGattCallback(TextView view, TimeManager tM, Activity mainActivity){
-        dataView = view;
+        dataView = view;//可能之後不需要
         timeManager = tM;
-        activity = mainActivity;
+
+        Classify.getCurrentClassify().setActivity(mainActivity);
+        Classify.getCurrentClassify().setTextView(dataView);
     }
 
 
@@ -584,7 +578,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
                 feature.add(mean);
             }
-            Classify.getCurrentClassify().setTextView(dataView, activity);
+
             Classify.getCurrentClassify().emgList(feature);
             Classify.getCurrentClassify().WekaKNN();
         }

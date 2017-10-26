@@ -50,10 +50,14 @@ public class Classify {
         return currentClassify;
     }
 
-    public void setTextView(TextView txv, Activity mainActivity){
+    public void setTextView(TextView txv){
         textView = txv;
+    }
+
+    public void setActivity(Activity mainActivity){
         activity = mainActivity;
     }
+
 
 
     public void emgList(LinkedList<Double> emgF){
@@ -261,6 +265,13 @@ public class Classify {
                     }
                 });
 
+                Thread.sleep(3000);
+
+                activity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        textView.setText("NULL");
+                    }
+                });
                 //textView.setText(result);
                 Log.d("RESUlt", result);
             } catch (Exception e) {

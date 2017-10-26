@@ -27,6 +27,10 @@ public class ImuData {
         imuData.add(element);
     }
 
+    public void setElement(int index ,double element) {
+        imuData.set(index,element);
+    }
+
     public Double getElement(int index) {
         if (index < 0 || index > imuData.size() - 1) {
             return null;

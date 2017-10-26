@@ -28,6 +28,10 @@ public class MOTiData{
         MOTiData.add(element);
     }
 
+    public void setElement(int index ,double element) {
+        MOTiData.set(index,element);
+    }
+
     public Double getElement(int index) {
         if (index < 0 || index > MOTiData.size() - 1) {
             return null;
