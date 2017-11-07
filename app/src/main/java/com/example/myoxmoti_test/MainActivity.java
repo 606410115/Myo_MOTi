@@ -99,6 +99,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
 
     private Button mybtn;
     private TextView mTextView;
+    private TextView myoStatusTextView;
 
     public BluetoothAdapter mMyoBluetoothAdapter;
     private BluetoothGatt    mBluetoothGatt;
@@ -127,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
 
         mybtn = (Button) findViewById(R.id.bWrite);
         mTextView= (TextView) findViewById(R.id.textView3);
+        myoStatusTextView = (TextView) findViewById(R.id.myoStatusText);
 
         check();
         checkBLE();
@@ -282,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
         if (deviceName.equals(device.getName())) {
             mMyoBluetoothAdapter.stopLeScan(this);
             // Trying to connect GATT
-            mMyoCallback = new MyoGattCallback(mTextView, timeManager, this);
+            mMyoCallback = new MyoGattCallback(mTextView, myoStatusTextView, timeManager, this);
             mBluetoothGatt = device.connectGatt(this, false, mMyoCallback);
             mMyoCallback.setBluetoothGatt(mBluetoothGatt);
         }

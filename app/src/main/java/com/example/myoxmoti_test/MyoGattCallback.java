@@ -59,6 +59,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private String TAG = "MyoGatt";
 
     private TextView dataView;
+    private TextView myoStatusView;
     private String callback_msg;
     //private Handler mHandler;
     private int[] emgDatas = new int[16];
@@ -84,10 +85,13 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private LinkedList<ImuData> list_imuWindow = new LinkedList<>();
 
     private TimeManager timeManager;
+    private Activity activity;
 
-    public MyoGattCallback(TextView view, TimeManager tM, Activity mainActivity){
+    public MyoGattCallback(TextView view, TextView myoView, TimeManager tM, Activity mainActivity){
         dataView = view;//可能之後不需要
+        myoStatusView = myoView;
         timeManager = tM;
+        activity = mainActivity;
 
         Classify.getCurrentClassify().setActivity(mainActivity);
         Classify.getCurrentClassify().setTextView(dataView);
@@ -113,6 +117,8 @@ public class MyoGattCallback extends BluetoothGattCallback {
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         super.onServicesDiscovered(gatt, status);
+        boolean checkEmgCommand = false, checkImuCommand = false;
+
         Log.d(TAG, "onServicesDiscovered received: " + status);
         if (status == BluetoothGatt.GATT_SUCCESS) {
             // Find GATT Service
@@ -121,6 +127,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 Log.d(TAG,"No Myo EMG-Data Service !!");
             } else {
                 Log.d(TAG, "Find Myo EMG-Data Service !!");
+                checkEmgCommand = true;
                 // Getting CommandCharacteristic
                 mCharacteristic_emg0 = service_emg.getCharacteristic(UUID.fromString(EMG_0_ID));
                 if (mCharacteristic_emg0 == null) {
@@ -154,6 +161,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 Log.d(TAG,"No Myo IMU-Data Service !!");
             } else {
                 Log.d(TAG, "Find Myo IMU-Data Service !!");
+                checkImuCommand = true;
                 // Getting CommandCharacteristic
                 mCharacteristic_imu = service_imu.getCharacteristic(UUID.fromString(IMU_DATA_ID));
                 if (mCharacteristic_imu == null) {
@@ -179,6 +187,14 @@ public class MyoGattCallback extends BluetoothGattCallback {
                         }
                     }
                 }
+            }
+
+            if(checkEmgCommand && checkImuCommand){
+                activity.runOnUiThread(new Runnable() {
+                    public void run() {
+                        myoStatusView.setText("Find");
+                    }
+                });
             }
 
             BluetoothGattService service = gatt.getService(UUID.fromString(MYO_CONTROL_ID));

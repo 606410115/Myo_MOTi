@@ -31,6 +31,15 @@
         android:layout_above="@+id/ll">
 
         <TextView
+            android:id="@+id/myoStatusText"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.32"
+            android:gravity="center_horizontal"
+            android:textSize = "20sp"
+            android:text="Fail" />
+
+        <TextView
             android:id="@+id/textView3"
             android:layout_width="0dp"
             android:layout_height="match_parent"
