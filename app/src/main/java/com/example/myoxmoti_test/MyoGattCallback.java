@@ -44,6 +44,8 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private final static int EMG_START_THRESHOLD = 8;
     private final static int EMG_END_THRESHOLD = 6;
 
+    private final static int IMU_WINDOW_LENGTH = 2;
+
     private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
     private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<BluetoothGattCharacteristic>();
 
@@ -68,16 +70,18 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private int emgStreamCount = 0;
     private EmgData emgStreamingMaxData;// emg取stream取0.2秒內最大
 
-    private static final float MYOHW_ORIENTATION_SCALE = 16384.0f;
-    private static final float MYOHW_ACCELEROMETER_SCALE = 2048.0f;
-    private static final float MYOHW_GYROSCOPE_SCALE = 16.0f;
-    private static final float G=9.8f;
+    private int imuStreamCount = 0;
+
+//    private static final float MYOHW_ORIENTATION_SCALE = 16384.0f;
+//    private static final float MYOHW_ACCELEROMETER_SCALE = 2048.0f;
+//    private static final float MYOHW_GYROSCOPE_SCALE = 16.0f;
+//    private static final float G=9.8f;
 
     private LinkedList<EmgData> list_emg = new LinkedList<>();
     private LinkedList<ImuData> list_imu = new LinkedList<>();
 
     private LinkedList<EmgData> list_emgWindow = new LinkedList<>();
-    //private LinkedList<ImuData> list_imuWindow = new LinkedList<>();
+    private LinkedList<ImuData> list_imuWindow = new LinkedList<>();
 
     private TimeManager timeManager;
 
@@ -319,6 +323,10 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
             list_emgWindow.add(streamData);
 
+            if(emgStreamCount > 1){
+                streamData = emgLowPassFiliter(list_emgWindow.getLast(), streamData, 0.2f);
+            }
+
             if (emgStreamCount == EMG_WINDOW_LENGTH){//5
                 emgStreamingMaxData = list_emgWindow.getFirst();
 
@@ -338,9 +346,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 mean = sum / 8;
 
                 if(mean > EMG_START_THRESHOLD){//有意義的動作
-                    Log.d("MyoEMG", "cross start threshold" + " mean: " + mean + " Flag: " + MainActivity.addFlag);
+                    //Log.d("MyoEMG", "cross start threshold" + " mean: " + mean + " Flag: " + MainActivity.addFlag);
                     if(!MainActivity.addFlag){//避免正在用力中還在多存
-                        Log.d("MyoEMG", "start save data");
+                        //Log.d("MyoEMG", "start save data");
                         MainActivity.addFlag = true;
 
                         for(int i = 0; i < EMG_WINDOW_LENGTH-1; i++){//把window裡的data存起來 最後一個留給下面add
@@ -390,40 +398,6 @@ public class MyoGattCallback extends BluetoothGattCallback {
                     }
                 }
             }
-
-
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            for (int i = 0; i < 8; i++) {
-                EMG_data=EMG_data+streamData.getElement(i)+"    ";
-            }
-            EMG_data=EMG_data+"\n";
-            //Log.d("myEMGmsg",EMG_data);
-
-
-
-            ByteReader emg_br = new ByteReader();
-            emg_br.setByteData(emg_data);//for nopModel use SaveModel has the same one
-
-            final String callback_msg = String.format("emg %5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d\n" +
-                            "    %5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d",
-                    emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),
-                    emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),
-                    emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),
-                    emg_br.getByte(),emg_br.getByte(),emg_br.getByte(),emg_br.getByte());
-            Log.d("MYOEMG",callback_msg);
-
-            emg_br = new ByteReader();
-            emg_br.setByteData(emg_data);
-            for(int emgInputIndex = 0;emgInputIndex<16;emgInputIndex++) {
-                emgDatas[emgInputIndex] = emg_br.getByte();
-                Log.d("MYOEMG_br",emgDatas[emgInputIndex]+"");
-            }
-
-            if (systemTime_ms > last_send_never_sleep_time_ms + NEVER_SLEEP_SEND_TIME) {
-                // set Myo [Never Sleep Mode]
-                setMyoControlCommand(commandList.sendUnSleep());
-                last_send_never_sleep_time_ms = systemTime_ms;
-            }
         }
 
 
@@ -432,6 +406,19 @@ public class MyoGattCallback extends BluetoothGattCallback {
             byte[] imu_data = characteristic.getValue();
             //Log.d("Mode","IMU : "+imu_data);
             ImuData streamData = new ImuData(new ImuCharacteristicData(imu_data), timeManager);
+
+            if(imuStreamCount >= IMU_WINDOW_LENGTH){
+                list_imuWindow.removeFirst();
+            }
+            else{
+                imuStreamCount++;
+            }
+
+            if(imuStreamCount > 1){
+                streamData = imuLowPassFiliter(list_imuWindow.getLast(), streamData, 0.2f);
+            }
+
+            list_imuWindow.add(streamData);
 
             if(MainActivity.addFlag){//收到開始收集的flag
                 list_imu.add(streamData);
@@ -504,40 +491,23 @@ public class MyoGattCallback extends BluetoothGattCallback {
                     //streamCount = 0;
                 }
             }*/
-
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ByteReader imu_br = new ByteReader();
-            imu_br.setByteData(imu_data);//for nopModel use SaveModel has the same one
-
-            /*final String callback_imu = String.format("orientation %5f,%5f,%5f,%5f\n" +
-                            "accelerometer %5f,%5f,%5f\n" +
-                            "gyroscope %5f,%5f,%5f",
-                    imu_br.getShort()/MYOHW_ORIENTATION_SCALE,imu_br.getShort()/MYOHW_ORIENTATION_SCALE,imu_br.getShort()/MYOHW_ORIENTATION_SCALE,imu_br.getShort()/MYOHW_ORIENTATION_SCALE,
-                    (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,(imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G,
-                    imu_br.getShort()/MYOHW_GYROSCOPE_SCALE,imu_br.getShort()/MYOHW_GYROSCOPE_SCALE,imu_br.getShort()/MYOHW_GYROSCOPE_SCALE);
-            Log.d("MYOIMU",callback_imu);*/
-            float w = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, x = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, y = imu_br.getShort()/MYOHW_ORIENTATION_SCALE, z = imu_br.getShort()/MYOHW_ORIENTATION_SCALE;
-            float accX = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accY = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G, accZ = (imu_br.getShort()/MYOHW_ACCELEROMETER_SCALE)*G;
-            float gryoX = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoY = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE, gryoZ = imu_br.getShort()/MYOHW_GYROSCOPE_SCALE;
-
-            String q="w:"+w+"x:"+x+" y:"+y+" z:"+z;
-            String acc="x:"+accX+" y:"+accY+" z:"+accZ;
-            String gyo="x:"+gryoX+" y:"+gryoY+" z:"+gryoZ;
-
-            float roll = (float) Math.toDegrees(Math.atan2(2.0D * (w * x + y * z), 1.0D - 2.0D * (x * x + y * y)));
-            float pitch = (float) Math.toDegrees(Math.asin(2.0D * (w * y - z * x)));
-            float yaw = (float) Math.toDegrees(Math.atan2(2.0D * (w * z + x * y), 1.0D - 2.0D * (y * y + z * z)));
-
-            dataView.setRotation(roll);
-            dataView.setRotationX(pitch);
-            dataView.setRotationY(yaw);
-
-            Log.d("mQ",q);
-            Log.d("mAccelerometer",acc);
-            Log.d("mGyroscopeData",gyo);
-
-
         }
+    }
+
+    private EmgData emgLowPassFiliter( EmgData input, EmgData output ,double ALPHA) {
+        for ( int i = 0; i < 7; i++ ){
+            output.setElement(i, output.getElement(i) + ALPHA * (input.getElement(i) - output.getElement(i)));
+        }
+
+        return output;
+    }
+
+    private ImuData imuLowPassFiliter( ImuData input, ImuData output ,double ALPHA) {
+        for ( int i = 0; i < 10; i++ ){
+            output.setElement(i, output.getElement(i) + ALPHA * (input.getElement(i) - output.getElement(i)));
+        }
+
+        return output;
     }
 
     public void setBluetoothGatt(BluetoothGatt gatt) {
