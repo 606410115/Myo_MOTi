@@ -511,7 +511,7 @@ public class MyoGattCallback extends BluetoothGattCallback {
     }
 
     private EmgData emgLowPassFiliter( EmgData input, EmgData output ,double ALPHA) {
-        for ( int i = 0; i < 7; i++ ){
+        for ( int i = 0; i < 8; i++ ){
             output.setElement(i, output.getElement(i) + ALPHA * (input.getElement(i) - output.getElement(i)));
         }
 
@@ -562,9 +562,10 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
                 mean = sum / emg_motion.size();
 
-                feature.add(mean);
+                double normalize_mean = mean / 256;
+                Log.d("MYO_normalize", "EMG normalize_mean: " + normalize_mean);
+                feature.add(normalize_mean);
             }
-
             Classify.getCurrentClassify().emgList(feature);
             Classify.getCurrentClassify().WekaKNN();
         }
@@ -592,7 +593,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
                 mean = sum / imu_motion.size();
 
-                feature.add(mean);
+                double normalize_mean = (mean + 156.8) / 313.6;
+                Log.d("MYO_normalize", "IMU normalize_mean: " + normalize_mean);
+                feature.add(normalize_mean);
 
                 switch (i_axis){
                     case 4:
@@ -616,7 +619,9 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
                 SD = Math.sqrt(SD_sum / imu_motion.size());
 
-                feature.add(SD);
+                double normalize_SD = SD / 24586.24;
+                Log.d("MYO_normalize", "IMU normalize_SD: " + normalize_SD);
+                feature.add(normalize_SD);
             }
 
             Classify.getCurrentClassify().imuList(feature);

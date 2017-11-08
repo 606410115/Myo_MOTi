@@ -88,7 +88,7 @@ public class MOTiLogActivity {
     }
 
     private MOTiData motiLowPassFiliter( MOTiData input, MOTiData output ,double ALPHA) {
-        for ( int i = 0; i < 7; i++ ){
+        for ( int i = 0; i < 6; i++ ){
             output.setElement(i, output.getElement(i) + ALPHA * (input.getElement(i) - output.getElement(i)));
         }
 
@@ -116,8 +116,10 @@ public class MOTiLogActivity {
 
                 mean = sum / moti_motion.size();
                 Log.d("MOTi", "mean: " + mean);
-                feature.add(mean);
 
+                double normalize_mean = (mean + 78.4) / 156.8;
+                Log.d("MOTi_normalize", "normalize_mean: " + normalize_mean);
+                feature.add(normalize_mean);
                 acc_mean[i_axis] = mean;
             }
             //acc 每軸標準差(3 features) => feature[3~5]
@@ -130,7 +132,10 @@ public class MOTiLogActivity {
 
                 SD = Math.sqrt(SD_sum / moti_motion.size());
                 Log.d("MOTi", "SD: " + SD);
-                feature.add(SD);
+
+                double normalize_SD = SD / 6146.56;
+                Log.d("MOTi_normalize", "normalize_SD: " + normalize_SD);
+                feature.add(normalize_SD);
             }
 
             Classify.getCurrentClassify().motiList(feature);
