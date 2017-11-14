@@ -23,20 +23,37 @@ public class ImuCharacteristicData {
 
         for (int i_imu_num = 0; i_imu_num < 10; i_imu_num++) {
             double temp = imuData.getShort();
-            if(i_imu_num<4){//quaternion
-                temp=temp/MYOHW_ORIENTATION_SCALE;
+            if(i_imu_num < 4){//quaternion
+                temp = temp / MYOHW_ORIENTATION_SCALE;
             }
-            else if(i_imu_num>=4&&i_imu_num<7){//accelerometer
-                temp=(temp/MYOHW_ACCELEROMETER_SCALE)*G;
+            else if(i_imu_num >= 4 && i_imu_num < 7){//accelerometer
+                temp = (temp / MYOHW_ACCELEROMETER_SCALE) * G;
             }
-            else if(i_imu_num>=7){//gyroscope
-                temp=temp/MYOHW_GYROSCOPE_SCALE;
+            else if(i_imu_num >= 7){//gyroscope
+                temp = temp / MYOHW_GYROSCOPE_SCALE;
             }
+
+            //temp = normalize(temp, i_imu_num);
 
             imuCovert.addElement(temp);
         }
 
         return imuCovert;
     }
+
+    public double normalize(double temp, int i_imu_num){
+        if(i_imu_num < 4){//quaternion
+            temp = temp / 65536;
+        }
+        else if(i_imu_num >= 4 && i_imu_num < 7){//accelerometer
+            temp = (temp + 156.8) / 313.6;
+        }
+        else if(i_imu_num >= 7){//gyroscope
+            temp = (temp + 2000) / 4000;
+        }
+
+        return temp;
+    }
+
 
 }

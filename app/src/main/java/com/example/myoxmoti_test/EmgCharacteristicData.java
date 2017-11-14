@@ -40,6 +40,9 @@ public class EmgCharacteristicData {
         ArrayList<Double> temp_Array = new ArrayList<>();
         for (int i_emg_num = 0; i_emg_num < 16; i_emg_num++) {//將排列過的emgdata串接起來
             double temp = emgData.getByte();//will return emgdata(just 1 value(getByte()))  double<-byte??
+
+            //temp = normalize(temp);
+
             temp_Array.add(temp);
         }
         for (int i_emg8 = 0; i_emg8 < 8; i_emg8++) {//將兩組sample的emgdata 每個sensor位置取值最大絕對存進emg8Data
@@ -53,4 +56,9 @@ public class EmgCharacteristicData {
         return emg8Data_max;
     }
 
+    public double normalize(double temp){
+        temp = temp / 256;
+
+        return temp;
+    }
 }

@@ -99,13 +99,30 @@ public class MOTiLogActivity {
         @Override
         public void run() {
             Log.d("MOTi", "moti thread");
-            LinkedList<MOTiData> moti_motion;
+            LinkedList<MOTiData> moti_motion = new LinkedList<>();
             LinkedList<Double> feature = new LinkedList<>();
 
             double[] acc_mean = new double[3];
 
 
-            moti_motion = list_moti;
+            //moti_motion = list_moti;
+
+            for (MOTiData aList_moti : list_moti){
+                moti_motion.add(aList_moti);
+            }
+
+            //normalize imu
+            for (MOTiData aList_moti : moti_motion) {
+                for (int i_moti_num = 0; i_moti_num < 6; i_moti_num++) {
+                    if (i_moti_num < 3) {//accelerometer
+                        aList_moti.setElement(i_moti_num, (aList_moti.getElement(i_moti_num) + 78.4) / 156.8);
+                    }
+                    else if (i_moti_num >= 3) {//gyroscope
+                        aList_moti.setElement(i_moti_num, (aList_moti.getElement(i_moti_num) + 500) / 1000);
+                    }
+                }
+            }
+
             //acc 每軸平均值(3 features) => feature[0~2]
             for(int i_axis = 0; i_axis < 3; i_axis++){//MOTi的ACC
                 double sum = 0.00, mean;
@@ -115,11 +132,11 @@ public class MOTiLogActivity {
                 }
 
                 mean = sum / moti_motion.size();
-                Log.d("MOTi", "mean: " + mean);
+                Log.d("MOTi", "mean : " + mean);
 
-                double normalize_mean = (mean + 78.4) / 156.8;
-                Log.d("MOTi_normalize", "normalize_mean: " + normalize_mean);
-                feature.add(normalize_mean);
+//                double normalize_mean = (mean + 78.4) / 156.8;
+//                Log.d("MOTi_normalize", "normalize_mean: " + normalize_mean);
+//                feature.add(normalize_mean);
                 acc_mean[i_axis] = mean;
             }
             //acc 每軸標準差(3 features) => feature[3~5]
@@ -131,11 +148,11 @@ public class MOTiLogActivity {
                 }
 
                 SD = Math.sqrt(SD_sum / moti_motion.size());
-                Log.d("MOTi", "SD: " + SD);
+                Log.d("MOTi", "SD : " + SD);
 
-                double normalize_SD = SD / 6146.56;
-                Log.d("MOTi_normalize", "normalize_SD: " + normalize_SD);
-                feature.add(normalize_SD);
+//                double normalize_SD = SD / 6146.56;
+//                Log.d("MOTi_normalize", "normalize_SD: " + normalize_SD);
+                feature.add(SD);
             }
 
             Classify.getCurrentClassify().motiList(feature);

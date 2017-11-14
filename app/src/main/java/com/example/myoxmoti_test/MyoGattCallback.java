@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -337,11 +338,11 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 emgStreamCount++;
             }
 
-            list_emgWindow.add(streamData);
-
             if(emgStreamCount > 1){
                 streamData = emgLowPassFiliter(list_emgWindow.getLast(), streamData, 0.2f);
             }
+
+            list_emgWindow.add(streamData);
 
             if (emgStreamCount == EMG_WINDOW_LENGTH){//5
                 emgStreamingMaxData = list_emgWindow.getFirst();
@@ -547,10 +548,21 @@ public class MyoGattCallback extends BluetoothGattCallback {
         @Override
         public void run() {
             Log.d("MyoEMG", "emg thread");
-            LinkedList<EmgData> emg_motion;
+            LinkedList<EmgData> emg_motion = new LinkedList<>();
             LinkedList<Double> feature = new LinkedList<>();
 
-            emg_motion = list_emg;
+            //emg_motion = list_emg;
+
+            for (EmgData aList_emg : list_emg) {
+                emg_motion.add(aList_emg);
+            }
+
+            //normalize emg
+            for (EmgData aList_emg : emg_motion) {
+                for (int i_emg8 = 0; i_emg8 < 8; i_emg8++) {
+                    aList_emg.setElement(i_emg8, aList_emg.getElement(i_emg8) / 256);
+                }
+            }
 
             //emg 每個sensor的平均值特徵(8 features)
             for(int j_sensor = 0; j_sensor < 8; j_sensor++){//MYO EMG的哪個sensor
@@ -561,10 +573,12 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 }
 
                 mean = sum / emg_motion.size();
+                Log.d("Myo", "emg_mean : " + mean);
+//                double normalize_mean = mean / 256;
+//                Log.d("MYO_normalize", "EMG normalize_mean: " + normalize_mean);
+//                feature.add(normalize_mean);
 
-                double normalize_mean = mean / 256;
-                Log.d("MYO_normalize", "EMG normalize_mean: " + normalize_mean);
-                feature.add(normalize_mean);
+                feature.add(mean);
             }
             Classify.getCurrentClassify().emgList(feature);
             Classify.getCurrentClassify().WekaKNN();
@@ -575,13 +589,32 @@ public class MyoGattCallback extends BluetoothGattCallback {
         @Override
         public void run() {
             Log.d("MyoIMU", "imu thread");
-            LinkedList<ImuData> imu_motion;
+            LinkedList<ImuData> imu_motion = new LinkedList<>();
             LinkedList<Double> feature = new LinkedList<>();
 
             double[] acc_mean = new double[3];
 
 
-            imu_motion = list_imu;
+            //imu_motion = list_imu;
+
+            for (ImuData aList_imu : list_imu) {
+                imu_motion.add(aList_imu);
+            }
+
+            //normalize imu
+            for (ImuData aList_imu : imu_motion) {
+                for (int i_imu_num = 0; i_imu_num < 10; i_imu_num++) {
+                    if (i_imu_num < 4) {//quaternion
+                        aList_imu.setElement(i_imu_num, aList_imu.getElement(i_imu_num) / 65536);
+                    }
+                    else if (i_imu_num >= 4 && i_imu_num < 7) {//accelerometer
+                        aList_imu.setElement(i_imu_num, (aList_imu.getElement(i_imu_num) + 156.8) / 313.6);
+                    }
+                    else if (i_imu_num >= 7) {//gyroscope
+                        aList_imu.setElement(i_imu_num, (aList_imu.getElement(i_imu_num) + 2000) / 4000);
+                    }
+                }
+            }
 
             //acc 每軸平均值(3 features) => feature[0~2]
             for(int i_axis = 4; i_axis < 7; i_axis++){//IMU的ACC
@@ -592,10 +625,12 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 }
 
                 mean = sum / imu_motion.size();
+                Log.d("Myo", "Imu_mean : " + mean);
+//                double normalize_mean = (mean + 156.8) / 313.6;
+//                Log.d("MYO_normalize", "IMU normalize_mean: " + normalize_mean);
+//                feature.add(normalize_mean);
 
-                double normalize_mean = (mean + 156.8) / 313.6;
-                Log.d("MYO_normalize", "IMU normalize_mean: " + normalize_mean);
-                feature.add(normalize_mean);
+                feature.add(mean);
 
                 switch (i_axis){
                     case 4:
@@ -618,10 +653,12 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 }
 
                 SD = Math.sqrt(SD_sum / imu_motion.size());
+                Log.d("Myo", "Imu_SD : " + SD);
+//                double normalize_SD = SD / 24586.24;
+//                Log.d("MYO_normalize", "IMU normalize_SD: " + normalize_SD);
+//                feature.add(normalize_SD);
 
-                double normalize_SD = SD / 24586.24;
-                Log.d("MYO_normalize", "IMU normalize_SD: " + normalize_SD);
-                feature.add(normalize_SD);
+                feature.add(SD);
             }
 
             Classify.getCurrentClassify().imuList(feature);
