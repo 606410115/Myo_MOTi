@@ -49,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.myoxmoti_test.BluetoothLeService.CHARAC_WRITE;
 import static com.example.myoxmoti_test.BluetoothLeService.CUSTOM_SERVICE;
 
@@ -57,6 +58,9 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     //----BLE----//
     private static final int REQUEST_ENABLE_BT = 1;
     private static final int REQUEST_LOCATION_PERMISSION = 2;
+
+    private static final int REQUEST_PERMISSION = 0;
+
     private Handler mHandler = new Handler();
     //Android 5.0 ↑
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -482,22 +486,33 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
 
     private void check(){
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            ArrayList<String> permissionList = new ArrayList<>();
+
             int permissionCoarseLocation = ActivityCompat.checkSelfPermission(this,
                     Manifest.permission.ACCESS_COARSE_LOCATION);
             if (permissionCoarseLocation != PackageManager.PERMISSION_GRANTED) {//確認有沒有授予權限
-                ActivityCompat.requestPermissions(this,
-                        new String[]{ACCESS_COARSE_LOCATION}, REQUEST_LOCATION_PERMISSION);
+                permissionList.add(ACCESS_COARSE_LOCATION);
             }else{
                 checkPermission = true;
             }
-        }else
-            checkPermission = true;
+
+            int permissionWriteExternalStorage = ActivityCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (permissionWriteExternalStorage != PackageManager.PERMISSION_GRANTED) {//確認有沒有授予權限
+                permissionList.add(WRITE_EXTERNAL_STORAGE);
+            }
+
+            if(permissionList.size() != 0){
+                ActivityCompat.requestPermissions(this,
+                        permissionList.toArray(new String[permissionList.size()]), REQUEST_PERMISSION);
+            }
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch(requestCode) {
-            case REQUEST_LOCATION_PERMISSION:
+            case REQUEST_PERMISSION:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     //取得權限，進行檔案存取
