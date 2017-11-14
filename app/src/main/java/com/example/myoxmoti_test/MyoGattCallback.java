@@ -59,7 +59,15 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
     private String TAG = "MyoGatt";
 
-    private TextView dataView;
+    //count motion textView
+    private TextView countText1;
+    private TextView countText2;
+    private TextView countText3;
+    private TextView countText4;
+    private TextView countText5;
+    private TextView countText6;
+
+    //private TextView dataView;
     private TextView myoStatusView;
     private String callback_msg;
     //private Handler mHandler;
@@ -88,14 +96,22 @@ public class MyoGattCallback extends BluetoothGattCallback {
     private TimeManager timeManager;
     private Activity activity;
 
-    public MyoGattCallback(TextView view, TextView myoView, TimeManager tM, Activity mainActivity){
-        dataView = view;//可能之後不需要
-        myoStatusView = myoView;
+    public MyoGattCallback(HashMap<String,View> views, TimeManager tM, Activity mainActivity){
+        //dataView = (TextView) views.get("result");
+        myoStatusView = (TextView) views.get("myoStatus");
+
+        countText1= (TextView) views.get("motion1");
+        countText2= (TextView) views.get("motion2");
+        countText3= (TextView) views.get("motion3");
+        countText4= (TextView) views.get("motion4");
+        countText5= (TextView) views.get("motion5");
+        countText6= (TextView) views.get("motion6");
+
         timeManager = tM;
         activity = mainActivity;
 
         Classify.getCurrentClassify().setActivity(mainActivity);
-        Classify.getCurrentClassify().setTextView(dataView);
+        Classify.getCurrentClassify().setTextView(views);
     }
 
 
@@ -194,6 +210,13 @@ public class MyoGattCallback extends BluetoothGattCallback {
                 activity.runOnUiThread(new Runnable() {
                     public void run() {
                         myoStatusView.setText("Find");
+                        //init count
+                        countText1.setText("0");
+                        countText2.setText("0");
+                        countText3.setText("0");
+                        countText4.setText("0");
+                        countText5.setText("0");
+                        countText6.setText("0");
                     }
                 });
             }

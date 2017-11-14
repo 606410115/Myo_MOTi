@@ -3,6 +3,7 @@ package com.example.myoxmoti_test;
 import android.app.Activity;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -11,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import weka.classifiers.Classifier;
@@ -32,6 +34,13 @@ public class Classify {
     private boolean Myo_EMG = false, Myo_IMU = false, MOTi = false;
 
     private TextView textView;
+    //count motion textView
+    private TextView countText1;
+    private TextView countText2;
+    private TextView countText3;
+    private TextView countText4;
+    private TextView countText5;
+    private TextView countText6;
 
     private Activity activity;
 
@@ -50,8 +59,15 @@ public class Classify {
         return currentClassify;
     }
 
-    public void setTextView(TextView txv){
-        textView = txv;
+    public void setTextView(HashMap<String,View> views){
+        textView = (TextView) views.get("result");
+
+        countText1= (TextView) views.get("motion1");
+        countText2= (TextView) views.get("motion2");
+        countText3= (TextView) views.get("motion3");
+        countText4= (TextView) views.get("motion4");
+        countText5= (TextView) views.get("motion5");
+        countText6= (TextView) views.get("motion6");
     }
 
     public void setActivity(Activity mainActivity){

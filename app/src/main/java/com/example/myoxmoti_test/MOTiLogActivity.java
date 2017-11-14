@@ -137,6 +137,8 @@ public class MOTiLogActivity {
 //                double normalize_mean = (mean + 78.4) / 156.8;
 //                Log.d("MOTi_normalize", "normalize_mean: " + normalize_mean);
 //                feature.add(normalize_mean);
+                feature.add(mean);
+
                 acc_mean[i_axis] = mean;
             }
             //acc 每軸標準差(3 features) => feature[3~5]

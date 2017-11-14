@@ -125,6 +125,13 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     public static boolean myoImuHaveCleaned = false;
     public static boolean motiHaveCleaned = false;
 
+    private TextView countText1;
+    private TextView countText2;
+    private TextView countText3;
+    private TextView countText4;
+    private TextView countText5;
+    private TextView countText6;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -133,6 +140,13 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
         mybtn = (Button) findViewById(R.id.bWrite);
         mTextView= (TextView) findViewById(R.id.textView3);
         myoStatusTextView = (TextView) findViewById(R.id.myoStatusText);
+
+        countText1= (TextView) findViewById(R.id.countText1);
+        countText2= (TextView) findViewById(R.id.countText2);
+        countText3= (TextView) findViewById(R.id.countText3);
+        countText4= (TextView) findViewById(R.id.countText4);
+        countText5= (TextView) findViewById(R.id.countText5);
+        countText6= (TextView) findViewById(R.id.countText6);
 
         check();
         checkBLE();
@@ -287,8 +301,22 @@ public class MainActivity extends AppCompatActivity implements BluetoothAdapter.
     public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
         if (deviceName.equals(device.getName())) {
             mMyoBluetoothAdapter.stopLeScan(this);
+
+            HashMap<String,View> views = new HashMap<String,View>();
+            //put result textView
+            views.put("result", mTextView);
+            //put myo status textView
+            views.put("myoStatus", myoStatusTextView);
+            //put motion countTextView
+            views.put("motion1", countText1);
+            views.put("motion2", countText2);
+            views.put("motion3", countText3);
+            views.put("motion4", countText4);
+            views.put("motion5", countText5);
+            views.put("motion6", countText6);
+
             // Trying to connect GATT
-            mMyoCallback = new MyoGattCallback(mTextView, myoStatusTextView, timeManager, this);
+            mMyoCallback = new MyoGattCallback(views, timeManager, this);
             mBluetoothGatt = device.connectGatt(this, false, mMyoCallback);
             mMyoCallback.setBluetoothGatt(mBluetoothGatt);
         }
