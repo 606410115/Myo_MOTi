@@ -270,18 +270,54 @@ public class Classify {
                     double clsLabel = ibk.classifyInstance(test.instance(i));
                     test.instance(i).setClassValue(clsLabel);
                 }
-                Instance mTest = test.instance(0);
+                final Instance mTest = test.instance(0);
                 String[] mGesture = mTest.toString().split(",");
 
                 result = mGesture[test.numAttributes()-1];
 
                 activity.runOnUiThread(new Runnable() {
                     public void run() {
+                        int tempCount;
+
                         textView.setText(result);
+
+                        switch (mTest.classAttribute().indexOfValue(result)){
+
+                            case 0://motion 1
+                                tempCount = Integer.parseInt(countText1.getText().toString());
+                                tempCount++;
+                                countText1.setText(tempCount+"");
+                                break;
+                            case 1://motion 2
+                                tempCount = Integer.parseInt(countText2.getText().toString());
+                                tempCount++;
+                                countText2.setText(tempCount+"");
+                                break;
+                            case 2://motion 3
+                                tempCount = Integer.parseInt(countText3.getText().toString());
+                                tempCount++;
+                                countText3.setText(tempCount+"");
+                                break;
+                            case 3://motion 4
+                                tempCount = Integer.parseInt(countText4.getText().toString());
+                                tempCount++;
+                                countText4.setText(tempCount+"");
+                                break;
+                            case 4://motion 5
+                                tempCount = Integer.parseInt(countText5.getText().toString());
+                                tempCount++;
+                                countText5.setText(tempCount+"");
+                                break;
+                            case 5://motion 6
+                                tempCount = Integer.parseInt(countText6.getText().toString());
+                                tempCount++;
+                                countText6.setText(tempCount+"");
+                                break;
+                        }
                     }
                 });
 
-                Thread.sleep(3000);
+                Thread.sleep(1000);
 
                 activity.runOnUiThread(new Runnable() {
                     public void run() {
