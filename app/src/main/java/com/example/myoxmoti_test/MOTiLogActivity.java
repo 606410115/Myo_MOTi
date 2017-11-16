@@ -107,8 +107,10 @@ public class MOTiLogActivity {
 
             //moti_motion = list_moti;
 
-            for (MOTiData aList_moti : list_moti){
-                moti_motion.add(aList_moti);
+            synchronized(this) {
+                for (MOTiData aList_moti : list_moti) {
+                    moti_motion.add(aList_moti);
+                }
             }
 
             //normalize imu

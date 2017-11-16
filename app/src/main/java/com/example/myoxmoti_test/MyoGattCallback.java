@@ -576,8 +576,10 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
             //emg_motion = list_emg;
 
-            for (EmgData aList_emg : list_emg) {
-                emg_motion.add(aList_emg);
+            synchronized(this) {
+                for (EmgData aList_emg : list_emg) {
+                    emg_motion.add(aList_emg);
+                }
             }
 
             //normalize emg
@@ -620,8 +622,10 @@ public class MyoGattCallback extends BluetoothGattCallback {
 
             //imu_motion = list_imu;
 
-            for (ImuData aList_imu : list_imu) {
-                imu_motion.add(aList_imu);
+            synchronized(this) {
+                for (ImuData aList_imu : list_imu) {
+                    imu_motion.add(aList_imu);
+                }
             }
 
             //normalize imu
